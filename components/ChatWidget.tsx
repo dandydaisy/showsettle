@@ -12,7 +12,11 @@ interface Message {
   timestamp: Date
 }
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  onFeatureExtracted?: (title: string, description: string) => void
+}
+
+export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -64,8 +68,12 @@ export function ChatWidget() {
 
       setMessages(prev => [...prev, assistantMessage])
 
-      if (data.featureRequest) {
-        console.log('Feature request detected:', data.featureRequest)
+      // If feature was logged, notify parent and add to board
+      if (data.featureLogged && data.featureTitle) {
+        onFeatureExtracted?.(
+          data.featureTitle,
+          data.featureDescription || 'Feature requested via AI chat'
+        )
       }
     } catch (error) {
       console.error('Chat error:', error)

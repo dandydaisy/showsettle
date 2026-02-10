@@ -7,26 +7,29 @@ const SYSTEM_PROMPT = `You are a helpful product manager AI for ShowSettle, a to
 Your job:
 1. Help users describe features they want
 2. Ask 1-2 clarifying questions to understand their needs
-3. Be enthusiastic and concise
-4. When you have enough info, extract the feature request
+3. Be enthusiastic and concise (under 80 words)
+4. When you have enough info, log the feature
 
 Guidelines:
 - Be conversational and friendly
-- Keep responses under 100 words
 - Ask specific questions ("Would you prefer X or Y?")
 - Validate if the feature makes sense for tour settlements
+- Don't over-explain - be punchy
 
 Examples:
 User: "Can you add PDF export?"
-You: "Great idea! Should the PDF include just the settlement summary, or itemized expenses too?"
+You: "Love it! Should the PDF include just the settlement summary, or itemized expenses too?"
 
 User: "Track multiple shows"
-You: "Nice! Would you want a calendar view or a simple list of past shows?"
+You: "Nice! Calendar view or simple list?"
 
-When you have a clear feature request, respond with:
-FEATURE_LOGGED: [Brief title of the feature]
+When you have a clear feature, respond EXACTLY like this:
+FEATURE: [Brief title] | [One-line description]
 
-Then say something like "Got it! This will show up on the voting board soon."`
+Example:
+FEATURE: PDF export with expenses | Download settlement as PDF with itemized expense breakdown
+
+Then add: "Got it! I've added this to the voting board. Check it out below! 👇"`
 
 interface Message {
   role: 'user' | 'assistant'
@@ -69,10 +72,10 @@ export async function POST(request: NextRequest) {
       console.error('OpenRouter API error:', errorText)
       return NextResponse.json(
         { 
-          message: "I'm having trouble connecting right now. Try the voting form instead!",
-          error: true 
+          message: "I'm having trouble connecting. Try the quick submit form instead!",
+          featureLogged: false,
         },
-        { status: 200 } // Still return 200 so chat doesn't break
+        { status: 200 }
       )
     }
 
@@ -80,25 +83,33 @@ export async function POST(request: NextRequest) {
     const assistantMessage = data.choices?.[0]?.message?.content || 
       "Tell me more about what you need!"
 
-    // Check if feature was logged
-    let featureLogged = false
-    const logMatch = assistantMessage.match(/FEATURE_LOGGED:\s*(.+)/i)
+    // Extract feature if present
+    const featureMatch = assistantMessage.match(/FEATURE:\s*(.+?)\s*\|\s*(.+)/i)
     
-    if (logMatch) {
-      featureLogged = true
-      // TODO: Save to Supabase when connected
-      console.log('Feature logged:', logMatch[1])
+    if (featureMatch) {
+      const featureTitle = featureMatch[1].trim()
+      const featureDescription = featureMatch[2].trim()
+      
+      // Remove the FEATURE: line from displayed message
+      const cleanMessage = assistantMessage.replace(/FEATURE:.+/i, '').trim()
+      
+      return NextResponse.json({
+        message: cleanMessage || "Got it! Added to the voting board.",
+        featureLogged: true,
+        featureTitle,
+        featureDescription,
+      })
     }
 
     return NextResponse.json({
       message: assistantMessage,
-      featureLogged,
+      featureLogged: false,
     })
   } catch (error) {
     console.error('Chat API error:', error)
     return NextResponse.json({
-      message: "I'm having trouble right now. Try voting on existing features instead!",
-      error: true,
+      message: "I'm having trouble right now. Try voting on existing features!",
+      featureLogged: false,
     })
   }
 }
