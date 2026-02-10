@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const OPENCLAW_URL = process.env.OPENCLAW_API_URL || 'http://localhost:18789'
-const OPENCLAW_TOKEN = process.env.OPENCLAW_API_TOKEN || ''
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
-const FEATURE_EXTRACTION_PROMPT = `You are a product manager AI helping users refine feature requests for ShowSettle, a tour settlement calculator app.
+const SYSTEM_PROMPT = `You are a helpful product manager AI for ShowSettle, a tour settlement calculator.
 
-Current context: User is describing a feature they want. Your job:
-1. Ask clarifying questions to understand the feature
-2. Validate if it's actually useful
-3. Extract structured feature request
+Your job:
+1. Help users describe features they want
+2. Ask 1-2 clarifying questions to understand their needs
+3. Be enthusiastic and concise
+4. When you have enough info, extract the feature request
 
-When you have enough info, respond with:
-FEATURE_REQUEST: {
-  "title": "Brief title",
-  "description": "Detailed description",
-  "priority": "high|medium|low",
-  "category": "calculator|export|tracking|ui|other"
-}
+Guidelines:
+- Be conversational and friendly
+- Keep responses under 100 words
+- Ask specific questions ("Would you prefer X or Y?")
+- Validate if the feature makes sense for tour settlements
 
-Be conversational, helpful, and brief. Don't ask more than 2-3 clarifying questions.`
+Examples:
+User: "Can you add PDF export?"
+You: "Great idea! Should the PDF include just the settlement summary, or itemized expenses too?"
+
+User: "Track multiple shows"
+You: "Nice! Would you want a calendar view or a simple list of past shows?"
+
+When you have a clear feature request, respond with:
+FEATURE_LOGGED: [Brief title of the feature]
+
+Then say something like "Got it! This will show up on the voting board soon."`
 
 interface Message {
   role: 'user' | 'assistant'
@@ -33,66 +41,64 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 })
     }
 
-    // Call OpenClaw chat completions endpoint
-    const response = await fetch(`${OPENCLAW_URL}/v1/chat/completions`, {
+    // Call OpenRouter
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENCLAW_TOKEN}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://showsettle.com',
+        'X-Title': 'ShowSettle',
       },
       body: JSON.stringify({
-        model: 'openrouter/anthropic/claude-sonnet-4.5',
+        model: 'anthropic/claude-3.5-sonnet',
         messages: [
           {
             role: 'system',
-            content: FEATURE_EXTRACTION_PROMPT,
+            content: SYSTEM_PROMPT,
           },
           ...messages,
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 300,
       }),
     })
 
     if (!response.ok) {
-      console.error('OpenClaw API error:', await response.text())
+      const errorText = await response.text()
+      console.error('OpenRouter API error:', errorText)
       return NextResponse.json(
-        { error: 'Failed to get AI response' },
-        { status: 500 }
+        { 
+          message: "I'm having trouble connecting right now. Try the voting form instead!",
+          error: true 
+        },
+        { status: 200 } // Still return 200 so chat doesn't break
       )
     }
 
     const data = await response.json()
     const assistantMessage = data.choices?.[0]?.message?.content || 
-      "I'm here to help! Tell me more about what you need."
+      "Tell me more about what you need!"
 
-    // Check if feature request was extracted
-    let featureRequest = null
-    const featureMatch = assistantMessage.match(/FEATURE_REQUEST:\s*({[\s\S]*?})/i)
+    // Check if feature was logged
+    let featureLogged = false
+    const logMatch = assistantMessage.match(/FEATURE_LOGGED:\s*(.+)/i)
     
-    if (featureMatch) {
-      try {
-        featureRequest = JSON.parse(featureMatch[1])
-        // Remove the JSON from the displayed message
-        const cleanMessage = assistantMessage.replace(/FEATURE_REQUEST:[\s\S]*$/i, '').trim()
-        return NextResponse.json({
-          message: cleanMessage || "Got it! I've logged that feature request.",
-          featureRequest,
-        })
-      } catch (e) {
-        console.error('Failed to parse feature request:', e)
-      }
+    if (logMatch) {
+      featureLogged = true
+      // TODO: Save to Supabase when connected
+      console.log('Feature logged:', logMatch[1])
     }
 
     return NextResponse.json({
       message: assistantMessage,
-      featureRequest: null,
+      featureLogged,
     })
   } catch (error) {
     console.error('Chat API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      message: "I'm having trouble right now. Try voting on existing features instead!",
+      error: true,
+    })
   }
 }

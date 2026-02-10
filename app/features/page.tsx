@@ -77,80 +77,90 @@ export default function FeaturesPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            What should we build next?
-          </h1>
-          <p className="text-slate-600">
-            Vote for features or suggest your own
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left Column - Voting */}
+          <div>
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-slate-900 mb-2">
+                What should we build next?
+              </h1>
+              <p className="text-slate-600">
+                Vote for features or chat with AI to describe what you need
+              </p>
+            </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Suggest a Feature</CardTitle>
-            <CardDescription>
-              Can't find what you're looking for? Tell us what you need.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                placeholder="I need a way to..."
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-              />
-              <Button type="submit">Submit</Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          {features.map((feature) => (
-            <Card key={feature.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-start gap-4 p-6">
-                <button
-                  onClick={() => handleVote(feature.id)}
-                  disabled={voted.has(feature.id)}
-                  className={`flex flex-col items-center gap-1 min-w-[60px] ${
-                    voted.has(feature.id)
-                      ? 'text-green-600'
-                      : 'text-slate-400 hover:text-slate-600'
-                  } transition-colors`}
-                >
-                  <ArrowUp className="w-6 h-6" />
-                  <span className="text-lg font-bold">{feature.votes}</span>
-                  <span className="text-xs">
-                    {voted.has(feature.id) ? 'Voted' : 'Vote'}
-                  </span>
-                </button>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
-                  <p className="text-slate-600 text-sm">{feature.description}</p>
-                </div>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Quick Submit</CardTitle>
+                <CardDescription>
+                  Have a simple idea? Add it here or use the AI chat →
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                  <Input
+                    placeholder="I need a way to..."
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                  />
+                  <Button type="submit">Submit</Button>
+                </form>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        <div className="mt-8 text-center">
-          <Button asChild variant="outline">
-            <a href="/">← Back to Calculator</a>
-          </Button>
-        </div>
+            <div className="space-y-4">
+              {features.map((feature) => (
+                <Card key={feature.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="flex items-start gap-4 p-6">
+                    <button
+                      onClick={() => handleVote(feature.id)}
+                      disabled={voted.has(feature.id)}
+                      className={`flex flex-col items-center gap-1 min-w-[60px] ${
+                        voted.has(feature.id)
+                          ? 'text-green-600'
+                          : 'text-slate-400 hover:text-slate-600'
+                      } transition-colors disabled:cursor-not-allowed`}
+                    >
+                      <ArrowUp className="w-6 h-6" />
+                      <span className="text-lg font-bold">{feature.votes}</span>
+                      <span className="text-xs">
+                        {voted.has(feature.id) ? 'Voted' : 'Vote'}
+                      </span>
+                    </button>
 
-        <div className="mt-12 p-6 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-blue-900 mb-2">How it works</h3>
-          <p className="text-blue-800 text-sm">
-            When a feature reaches 10 votes, our AI will reach out to voters for details, 
-            build it, and ship it within days. You shape the product.
-          </p>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
+                      <p className="text-slate-600 text-sm">{feature.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="mt-8">
+              <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-blue-900 mb-2">How it works</h3>
+                <p className="text-blue-800 text-sm">
+                  When a feature reaches 10 votes, our AI will reach out to voters for details, 
+                  build it, and ship it within days. You shape the product.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <Button asChild variant="outline">
+                <a href="/">← Back to Calculator</a>
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Column - AI Chat */}
+          <div className="lg:sticky lg:top-8 h-[600px]">
+            <ChatWidget />
+          </div>
         </div>
       </div>
-
-      <ChatWidget />
     </main>
   )
 }
