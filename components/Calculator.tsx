@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Calculator as CalcIcon, DollarSign } from 'lucide-react'
 
 export function Calculator() {
   const [gbor, setGbor] = useState('')
@@ -41,112 +42,143 @@ export function Calculator() {
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Settlement Calculator</CardTitle>
-          <CardDescription>
-            Enter your show details to calculate the split
-          </CardDescription>
+      <Card className="bg-gradient-to-br from-gray-900 to-gray-950 border-cyan-500/30 shadow-[0_0_50px_-12px] shadow-cyan-500/30">
+        <CardHeader className="border-b border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-cyan-500/10 rounded-lg">
+              <CalcIcon className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <CardTitle className="text-white">Settlement Calculator</CardTitle>
+              <CardDescription className="text-gray-500 font-mono text-xs">
+                Feature #1 · Built by votes
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6 pt-6">
           <div className="space-y-2">
-            <Label htmlFor="gbor">GBOR (Gross Box Office Receipts)</Label>
-            <Input
-              id="gbor"
-              type="number"
-              placeholder="10000"
-              value={gbor}
-              onChange={(e) => setGbor(e.target.value)}
-            />
+            <Label htmlFor="gbor" className="text-gray-400 font-mono text-sm">
+              GBOR (Gross Box Office Receipts)
+            </Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+              <Input
+                id="gbor"
+                type="number"
+                placeholder="10000"
+                value={gbor}
+                onChange={(e) => setGbor(e.target.value)}
+                className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="guarantee">Guarantee</Label>
-            <Input
-              id="guarantee"
-              type="number"
-              placeholder="2500"
-              value={guarantee}
-              onChange={(e) => setGuarantee(e.target.value)}
-            />
+            <Label htmlFor="guarantee" className="text-gray-400 font-mono text-sm">
+              Guarantee
+            </Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+              <Input
+                id="guarantee"
+                type="number"
+                placeholder="2500"
+                value={guarantee}
+                onChange={(e) => setGuarantee(e.target.value)}
+                className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expenses">Expenses</Label>
-            <Input
-              id="expenses"
-              type="number"
-              placeholder="3000"
-              value={expenses}
-              onChange={(e) => setExpenses(e.target.value)}
-            />
+            <Label htmlFor="expenses" className="text-gray-400 font-mono text-sm">
+              Expenses
+            </Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+              <Input
+                id="expenses"
+                type="number"
+                placeholder="3000"
+                value={expenses}
+                onChange={(e) => setExpenses(e.target.value)}
+                className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="split">Split % (Band)</Label>
-            <Input
-              id="split"
-              type="number"
-              placeholder="80"
-              value={splitPercent}
-              onChange={(e) => setSplitPercent(e.target.value)}
-              min="0"
-              max="100"
-            />
+            <Label htmlFor="split" className="text-gray-400 font-mono text-sm">
+              Split % (Band)
+            </Label>
+            <div className="flex items-center gap-3">
+              <Input
+                id="split"
+                type="number"
+                placeholder="80"
+                value={splitPercent}
+                onChange={(e) => setSplitPercent(e.target.value)}
+                min="0"
+                max="100"
+                className="bg-black border-gray-700 text-white focus:border-cyan-500 focus:ring-cyan-500/20"
+              />
+              <span className="text-2xl font-bold text-gray-700">%</span>
+            </div>
           </div>
 
-          <Button onClick={calculate} className="w-full" size="lg">
+          <Button 
+            onClick={calculate} 
+            className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-semibold hover:shadow-[0_0_30px_-5px] hover:shadow-cyan-500/50 transition-all duration-300" 
+            size="lg"
+          >
             Calculate Settlement
           </Button>
         </CardContent>
       </Card>
 
       {result && (
-        <Card className="border-green-500 bg-green-50">
-          <CardHeader>
-            <CardTitle>Settlement Results</CardTitle>
+        <Card className="bg-gradient-to-br from-gray-900 to-gray-950 border-green-500/50 shadow-[0_0_50px_-12px] shadow-green-500/40 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent pointer-events-none"></div>
+          <CardHeader className="border-b border-gray-800 relative">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <CardTitle className="text-white font-mono">Results</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 relative">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-white rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Total Profit</div>
-                <div className="text-2xl font-bold">{formatCurrency(result.profit)}</div>
-              </div>
-
-              <div className="text-center p-4 bg-green-100 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">
-                  Your Take ({splitPercent}%)
-                </div>
-                <div className="text-2xl font-bold text-green-700">
-                  {formatCurrency(result.bandTake)}
+              {/* Total Profit */}
+              <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
+                <div className="text-xs text-gray-500 font-mono mb-2">TOTAL PROFIT</div>
+                <div className="text-3xl font-bold text-white font-mono">
+                  {formatCurrency(result.profit)}
                 </div>
               </div>
 
-              <div className="text-center p-4 bg-gray-100 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">
-                  Promoter Take ({100 - parseFloat(splitPercent)}%)
+              {/* Band Take */}
+              <div className="text-center p-6 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-lg border border-green-500/50 relative overflow-hidden">
+                <div className="absolute inset-0 bg-green-500/5 blur-xl"></div>
+                <div className="relative">
+                  <div className="text-xs text-green-400 font-mono mb-2">
+                    YOUR TAKE ({splitPercent}%)
+                  </div>
+                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400 font-mono">
+                    {formatCurrency(result.bandTake)}
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-700">
+              </div>
+
+              {/* Promoter Take */}
+              <div className="text-center p-6 bg-black/50 rounded-lg border border-gray-800">
+                <div className="text-xs text-gray-500 font-mono mb-2">
+                  PROMOTER ({100 - parseFloat(splitPercent)}%)
+                </div>
+                <div className="text-3xl font-bold text-gray-400 font-mono">
                   {formatCurrency(result.promoterTake)}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {result && (
-        <Card className="border-blue-500">
-          <CardHeader>
-            <CardTitle>What should we build next?</CardTitle>
-            <CardDescription>
-              Help us prioritize new features by voting or suggesting your own
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full" variant="outline" size="lg">
-              <a href="/features">Vote on Features →</a>
-            </Button>
           </CardContent>
         </Card>
       )}

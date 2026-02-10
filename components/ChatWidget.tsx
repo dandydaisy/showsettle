@@ -96,14 +96,14 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-xl">
+    <Card className="h-full flex flex-col bg-gray-900 border-purple-500/30">
+      <CardHeader className="bg-gradient-to-r from-purple-900 to-pink-900 text-white rounded-t-xl border-b border-purple-500/30">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
+          <Sparkles className="w-5 h-5 text-purple-300" />
           <div>
-            <CardTitle className="text-white">Build with AI</CardTitle>
-            <CardDescription className="text-blue-100">
-              Describe what you need - I'll help you refine it
+            <CardTitle className="text-white font-mono">AI Agent</CardTitle>
+            <CardDescription className="text-purple-200 font-mono text-xs">
+              Describe what you need → Get +5 votes if approved
             </CardDescription>
           </div>
         </div>
@@ -111,7 +111,7 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
 
       <CardContent className="flex-1 flex flex-col p-0">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -120,12 +120,12 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
               <div
                 className={`max-w-[85%] rounded-lg px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-slate-200 shadow-sm'
+                    ? 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white'
+                    : 'bg-gray-900 border border-purple-500/30 shadow-sm text-gray-300'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                <p className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-100' : 'text-slate-400'}`}>
+                <p className={`text-xs mt-2 font-mono ${msg.role === 'user' ? 'text-cyan-200' : 'text-gray-600'}`}>
                   {msg.timestamp.toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -136,11 +136,11 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
+              <div className="bg-gray-900 border border-purple-500/30 rounded-lg px-4 py-3 shadow-sm">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t bg-white rounded-b-xl">
+        <div className="p-4 border-t border-purple-500/30 bg-gray-900 rounded-b-xl">
           <div className="flex gap-2">
             <Input
               placeholder="I wish it could..."
@@ -157,18 +157,18 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 bg-black border-gray-700 text-white placeholder:text-gray-600 focus:border-purple-500"
             />
             <Button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="shrink-0"
+              className="shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-[0_0_20px_-5px] hover:shadow-purple-500/50"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-gray-600 mt-2 font-mono">
             Press Enter to send · Shift+Enter for new line
           </p>
         </div>
