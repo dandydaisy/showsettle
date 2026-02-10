@@ -1,107 +1,184 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChatWidget } from '@/components/ChatWidget'
 import { ArrowUp, ArrowDown } from 'lucide-react'
-
-const INITIAL_FEATURES = [
-  {
-    id: 1,
-    title: 'Save settlement history',
-    description: 'Track all your past settlements in one place',
-    votes: 12,
-  },
-  {
-    id: 2,
-    title: 'Export to PDF',
-    description: 'Download settlement sheets as PDF documents',
-    votes: 8,
-  },
-  {
-    id: 3,
-    title: 'Multi-show tour tracking',
-    description: 'Manage entire tours with calendar view',
-    votes: 15,
-  },
-  {
-    id: 4,
-    title: 'Expense categories breakdown',
-    description: 'Organize expenses by category (sound, lights, catering, etc.)',
-    votes: 6,
-  },
-  {
-    id: 5,
-    title: 'Multiple deal structures',
-    description: 'Support for 90/10, 85/15, vs vs, and custom splits',
-    votes: 10,
-  },
-]
+import { supabase, type Feature } from '@/lib/supabase'
+import { getUserId } from '@/lib/getUserId'
 
 const MAX_VOTES = 8
 
 export default function FeaturesPage() {
-  const [features, setFeatures] = useState(INITIAL_FEATURES)
+  const [features, setFeatures] = useState<Feature[]>([])
   const [newFeature, setNewFeature] = useState('')
   const [userVotes, setUserVotes] = useState<Map<number, 1 | -1>>(new Map())
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState('')
 
   const votesUsed = userVotes.size
   const votesRemaining = MAX_VOTES - votesUsed
 
-  const handleVote = (id: number, direction: 1 | -1) => {
-    // If already voted on this feature, can't change
-    if (userVotes.has(id)) return
+  // Load features and user's votes
+  useEffect(() => {
+    const uid = getUserId()
+    setUserId(uid)
+    loadFeatures(uid)
+  }, [])
 
-    // If out of votes, can't vote
+  const loadFeatures = async (uid: string) => {
+    try {
+      // Load all features
+      const { data: featuresData, error: featuresError } = await supabase
+        .from('feature_requests')
+        .select('*')
+        .order('votes', { ascending: false })
+
+      if (featuresError) throw featuresError
+
+      // Load user's votes
+      const { data: votesData, error: votesError } = await supabase
+        .from('feature_votes')
+        .select('feature_id, vote_direction')
+        .eq('user_id', uid)
+
+      if (votesError) throw votesError
+
+      setFeatures(featuresData || [])
+      
+      const votesMap = new Map<number, 1 | -1>()
+      votesData?.forEach(v => votesMap.set(v.feature_id, v.vote_direction as 1 | -1))
+      setUserVotes(votesMap)
+    } catch (error) {
+      console.error('Error loading features:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVote = async (featureId: number, direction: 1 | -1) => {
+    if (userVotes.has(featureId)) return
     if (votesUsed >= MAX_VOTES) return
 
-    setFeatures(prev =>
-      prev
-        .map(f => (f.id === id ? { ...f, votes: f.votes + direction } : f))
-        .sort((a, b) => b.votes - a.votes)
-    )
-    
-    setUserVotes(prev => new Map(prev).set(id, direction))
+    try {
+      // Insert vote
+      const { error: voteError } = await supabase
+        .from('feature_votes')
+        .insert({
+          feature_id: featureId,
+          user_id: userId,
+          vote_direction: direction,
+        })
+
+      if (voteError) throw voteError
+
+      // Update feature vote count
+      const feature = features.find(f => f.id === featureId)
+      if (feature) {
+        const newVotes = feature.votes + direction
+        
+        const { error: updateError } = await supabase
+          .from('feature_requests')
+          .update({ votes: newVotes })
+          .eq('id', featureId)
+
+        if (updateError) throw updateError
+
+        // Update local state
+        setFeatures(prev =>
+          prev
+            .map(f => (f.id === featureId ? { ...f, votes: newVotes } : f))
+            .sort((a, b) => b.votes - a.votes)
+        )
+        
+        setUserVotes(prev => new Map(prev).set(featureId, direction))
+      }
+    } catch (error) {
+      console.error('Error voting:', error)
+      alert('Failed to save vote. Try again!')
+    }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newFeature.trim()) return
+    if (!newFeature.trim() || votesUsed >= MAX_VOTES) return
 
-    const newId = Math.max(...features.map(f => f.id)) + 1
-    const newFeatureObj = {
-      id: newId,
-      title: newFeature,
-      description: 'User-submitted feature request',
-      votes: 1,
+    try {
+      const { data, error } = await supabase
+        .from('feature_requests')
+        .insert({
+          title: newFeature,
+          description: 'User-submitted feature request',
+          votes: 1,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add user's vote
+      await supabase
+        .from('feature_votes')
+        .insert({
+          feature_id: data.id,
+          user_id: userId,
+          vote_direction: 1,
+        })
+
+      setFeatures(prev => [data, ...prev].sort((a, b) => b.votes - a.votes))
+      setUserVotes(prev => new Map(prev).set(data.id, 1))
+      setNewFeature('')
+    } catch (error) {
+      console.error('Error submitting feature:', error)
+      alert('Failed to submit feature. Try again!')
     }
-    
-    setFeatures(prev => [
-      ...prev,
-      newFeatureObj,
-    ].sort((a, b) => b.votes - a.votes))
-    
-    setUserVotes(prev => new Map(prev).set(newId, 1))
-    setNewFeature('')
   }
 
-  const handleChatFeature = (title: string, description: string) => {
-    const newId = Math.max(...features.map(f => f.id)) + 1
-    const newFeatureObj = {
-      id: newId,
-      title,
-      description: description || 'Feature requested via AI chat',
-      votes: 1,
+  const handleChatFeature = async (title: string, description: string) => {
+    if (votesUsed >= MAX_VOTES) {
+      alert('You\'re out of votes! The feature was logged but not voted on yet.')
+      return
     }
-    
-    setFeatures(prev => [
-      ...prev,
-      newFeatureObj,
-    ].sort((a, b) => b.votes - a.votes))
-    
-    setUserVotes(prev => new Map(prev).set(newId, 1))
+
+    try {
+      const { data, error } = await supabase
+        .from('feature_requests')
+        .insert({
+          title,
+          description: description || 'Feature requested via AI chat',
+          votes: 1,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add user's vote
+      await supabase
+        .from('feature_votes')
+        .insert({
+          feature_id: data.id,
+          user_id: userId,
+          vote_direction: 1,
+        })
+
+      setFeatures(prev => [data, ...prev].sort((a, b) => b.votes - a.votes))
+      setUserVotes(prev => new Map(prev).set(data.id, 1))
+    } catch (error) {
+      console.error('Error adding chat feature:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 py-12 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-slate-600">Loading features...</p>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -153,10 +230,15 @@ export default function FeaturesPage() {
                     value={newFeature}
                     onChange={(e) => setNewFeature(e.target.value)}
                   />
-                  <Button type="submit" disabled={votesRemaining === 0}>
+                  <Button type="submit" disabled={votesRemaining === 0 || !newFeature.trim()}>
                     Submit
                   </Button>
                 </form>
+                {votesRemaining === 0 && (
+                  <p className="text-xs text-red-600 mt-2">
+                    Out of votes! You can still suggest features via chat.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
