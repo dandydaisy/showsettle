@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowUp, ArrowDown, MessageSquare, Sparkles } from 'lucide-react'
+import { ArrowUp, ArrowDown, Sparkles } from 'lucide-react'
 import { supabase, type Feature } from '@/lib/supabase'
 import { getUserId } from '@/lib/getUserId'
 import { ChatWidget } from '@/components/ChatWidget'
@@ -14,14 +12,13 @@ const BONUS_VOTES = 5
 
 export function VoteSection() {
   const [features, setFeatures] = useState<Feature[]>([])
-  const [newFeature, setNewFeature] = useState('')
-  const [userVotes, setUserVotes] = useState<Map<number, 1 | -1>>(new Map())
+  const [userVotes, setUserVotes] = useState<Map<number, number>>(new Map()) // Now stores vote count per feature
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
-  const [showChat, setShowChat] = useState(false)
   const [bonusVotesEarned, setBonusVotesEarned] = useState(0)
 
-  const votesUsed = userVotes.size
+  // Calculate total votes used (sum of all vote values)
+  const votesUsed = Array.from(userVotes.values()).reduce((sum, count) => sum + Math.abs(count), 0)
   const totalVotes = MAX_VOTES + bonusVotesEarned
   const votesRemaining = totalVotes - votesUsed
 
@@ -49,8 +46,12 @@ export function VoteSection() {
 
       setFeatures(featuresData || [])
       
-      const votesMap = new Map<number, 1 | -1>()
-      votesData?.forEach(v => votesMap.set(v.feature_id, v.vote_direction as 1 | -1))
+      // Aggregate votes per feature (count total upvotes/downvotes)
+      const votesMap = new Map<number, number>()
+      votesData?.forEach(v => {
+        const current = votesMap.get(v.feature_id) || 0
+        votesMap.set(v.feature_id, current + v.vote_direction)
+      })
       setUserVotes(votesMap)
     } catch (error) {
       console.error('Error loading features:', error)
@@ -60,10 +61,10 @@ export function VoteSection() {
   }
 
   const handleVote = async (featureId: number, direction: 1 | -1) => {
-    if (userVotes.has(featureId)) return
     if (votesRemaining <= 0) return
 
     try {
+      // Insert the vote record
       const { error: voteError } = await supabase
         .from('feature_votes')
         .insert({
@@ -74,6 +75,7 @@ export function VoteSection() {
 
       if (voteError) throw voteError
 
+      // Update feature vote count
       const feature = features.find(f => f.id === featureId)
       if (feature) {
         const newVotes = feature.votes + direction
@@ -91,46 +93,14 @@ export function VoteSection() {
             .sort((a, b) => b.votes - a.votes)
         )
         
-        setUserVotes(prev => new Map(prev).set(featureId, direction))
+        // Update user's vote count for this feature
+        setUserVotes(prev => {
+          const current = prev.get(featureId) || 0
+          return new Map(prev).set(featureId, current + direction)
+        })
       }
     } catch (error) {
       console.error('Error voting:', error)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newFeature.trim() || votesRemaining <= 0) return
-
-    try {
-      const { data, error } = await supabase
-        .from('feature_requests')
-        .insert({
-          title: newFeature,
-          description: 'User-submitted feature request',
-          votes: 1,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      await supabase
-        .from('feature_votes')
-        .insert({
-          feature_id: data.id,
-          user_id: userId,
-          vote_direction: 1,
-        })
-
-      setFeatures(prev => [data, ...prev].sort((a, b) => b.votes - a.votes))
-      setUserVotes(prev => new Map(prev).set(data.id, 1))
-      setNewFeature('')
-      
-      // Award bonus votes
-      setBonusVotesEarned(prev => prev + BONUS_VOTES)
-    } catch (error) {
-      console.error('Error submitting feature:', error)
     }
   }
 
@@ -181,15 +151,15 @@ export function VoteSection() {
       id="vote" 
       className="min-h-screen flex flex-col px-6 py-20 relative"
     >
-      {/* Purple gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-purple-950/10 to-black" />
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
       
-      <div className="relative z-10 max-w-6xl mx-auto w-full space-y-8">
+      <div className="relative z-10 max-w-6xl mx-auto w-full space-y-12">
         {/* Section header */}
-        <div className="text-center space-y-4 mb-12">
+        <div className="text-center space-y-4 mb-8">
           <div className="inline-block">
-            <div className="font-mono text-sm text-purple-400 mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
+            <div className="font-mono text-sm text-cyan-400 mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
               <span>YOUR TURN</span>
             </div>
           </div>
@@ -197,212 +167,184 @@ export function VoteSection() {
           <h2 className="text-4xl md:text-5xl font-bold text-white">
             Vote on What We Build Next
           </h2>
-          
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Don't like what you see? <span className="text-red-400">Downvote</span> your colleagues.
-            <br />
-            Chat with our agent to add <span className="text-green-400">your idea</span> to the leaderboard.
-          </p>
+        </div>
+
+        {/* How It Works - Step instructions */}
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-8">
+            <h3 className="font-mono text-sm text-cyan-400 mb-6">HOW IT WORKS</h3>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-green-500/20 border border-green-500/50 rounded-lg flex items-center justify-center">
+                  <span className="text-green-400 font-bold text-lg">1</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-1">Like what you see? Upvote it.</h4>
+                  <p className="text-gray-400 text-sm">Features with 10+ votes get built by AI.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center">
+                  <span className="text-red-400 font-bold text-lg">2</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-1">Don't like the idea? Downvote.</h4>
+                  <p className="text-gray-400 text-sm">Help prioritize what actually matters.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-cyan-500/20 border border-cyan-500/50 rounded-lg flex items-center justify-center">
+                  <span className="text-cyan-400 font-bold text-lg">3</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-1">Want to see a new feature added? Chat below.</h4>
+                  <p className="text-gray-400 text-sm">
+                    If we like the idea, we'll credit you <span className="text-green-400 font-semibold">+{BONUS_VOTES.toLocaleString()} more votes</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Vote budget display */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-950 border border-cyan-500/30 rounded-xl p-6 max-w-2xl mx-auto shadow-[0_0_50px_-12px] shadow-cyan-500/30">
+        <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-mono text-sm text-gray-500 mb-1">VOTE BUDGET</div>
+              <div className="font-mono text-sm text-gray-500 mb-1">YOUR VOTE BUDGET</div>
               <div className="text-white font-semibold">
                 Shape the roadmap with upvotes & downvotes
               </div>
               {bonusVotesEarned > 0 && (
                 <div className="text-sm text-green-400 mt-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  +{bonusVotesEarned} bonus votes earned!
+                  +{bonusVotesEarned.toLocaleString()} bonus votes earned!
                 </div>
               )}
             </div>
             <div className="text-right">
-              <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                {votesRemaining}
+              <div className="text-5xl font-bold text-cyan-400">
+                {votesRemaining.toLocaleString()}
               </div>
               <div className="text-sm text-gray-500 font-mono">
-                / {totalVotes} votes
+                / {totalVotes.toLocaleString()} votes
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick submit */}
-        <div className="max-w-2xl mx-auto">
-          <Card className="bg-gray-900 border-green-500/30 shadow-[0_0_30px_-12px] shadow-green-500/20">
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="font-mono text-sm text-green-400">QUICK SUBMIT</span>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="I wish it could..."
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    className="bg-black border-gray-700 text-white placeholder:text-gray-600 focus:border-green-500"
-                    disabled={votesRemaining <= 0}
-                  />
-                  <Button 
-                    type="submit" 
-                    disabled={votesRemaining <= 0 || !newFeature.trim()}
-                    className="bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold hover:shadow-[0_0_20px_-5px] hover:shadow-green-500/50"
+        {/* Desktop: Side-by-side layout | Mobile: Stacked */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left: Features leaderboard */}
+          <div>
+            <h3 className="font-mono text-sm text-cyan-400 mb-4 text-center lg:text-left">FEATURE LEADERBOARD</h3>
+            <div className="space-y-3">
+              {features.map((feature) => {
+                const userVoteCount = userVotes.get(feature.id) || 0
+                const hasUpvoted = userVoteCount > 0
+                const hasDownvoted = userVoteCount < 0
+                const canVote = votesRemaining > 0
+
+                return (
+                  <Card 
+                    key={feature.id} 
+                    className="bg-gray-900 border-gray-800 hover:border-cyan-500/50 transition-all duration-300"
                   >
-                    Submit
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 font-mono">
-                  Submit & earn <span className="text-green-400">+{BONUS_VOTES} bonus votes</span> if we add it to the board
-                </p>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+                    <CardContent className="p-4">
+                      <div className="flex gap-3">
+                        {/* Vote buttons */}
+                        <div className="flex flex-col items-center gap-1 min-w-[50px]">
+                          <button
+                            onClick={() => handleVote(feature.id, 1)}
+                            disabled={votesRemaining <= 0}
+                            className={`transition-all ${
+                              canVote
+                                ? 'text-gray-600 hover:text-green-400 hover:scale-110'
+                                : 'text-gray-800 cursor-not-allowed'
+                            }`}
+                          >
+                            <ArrowUp className="w-5 h-5" />
+                          </button>
 
-        {/* Features grid */}
-        <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-          {features.map((feature) => {
-            const userVote = userVotes.get(feature.id)
-            const hasUpvoted = userVote === 1
-            const hasDownvoted = userVote === -1
-            const canVote = votesRemaining > 0 && !userVote
+                          <div className={`text-xl font-bold font-mono ${
+                            feature.votes >= 10 
+                              ? 'text-green-400' 
+                              : 'text-white'
+                          }`}>
+                            {feature.votes.toLocaleString()}
+                          </div>
 
-            return (
-              <Card 
-                key={feature.id} 
-                className="bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[0_0_30px_-12px] hover:shadow-cyan-500/30"
-              >
-                <CardContent className="p-6">
-                  <div className="flex gap-4">
-                    {/* Vote buttons */}
-                    <div className="flex flex-col items-center gap-2 min-w-[60px]">
-                      <button
-                        onClick={() => handleVote(feature.id, 1)}
-                        disabled={!canVote && !hasUpvoted}
-                        className={`transition-all ${
-                          hasUpvoted
-                            ? 'text-green-400 scale-110'
-                            : canVote
-                            ? 'text-gray-600 hover:text-green-400 hover:scale-110'
-                            : 'text-gray-800 cursor-not-allowed'
-                        }`}
-                      >
-                        <ArrowUp className="w-6 h-6" />
-                      </button>
+                          <button
+                            onClick={() => handleVote(feature.id, -1)}
+                            disabled={votesRemaining <= 0}
+                            className={`transition-all ${
+                              canVote
+                                ? 'text-gray-600 hover:text-red-400 hover:scale-110'
+                                : 'text-gray-800 cursor-not-allowed'
+                            }`}
+                          >
+                            <ArrowDown className="w-5 h-5" />
+                          </button>
+                        </div>
 
-                      <div className={`text-2xl font-bold font-mono ${
-                        feature.votes >= 10 
-                          ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400' 
-                          : 'text-white'
-                      }`}>
-                        {feature.votes}
+                        {/* Feature info */}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white mb-1">
+                            {feature.title}
+                          </h3>
+                          <p className="text-gray-400 text-sm mb-2">
+                            {feature.description}
+                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {feature.votes >= 10 && (
+                              <div className="inline-flex items-center gap-2 text-xs font-mono text-green-400 bg-green-400/10 px-2 py-1 rounded-full border border-green-400/30">
+                                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                                BUILDING SOON
+                              </div>
+                            )}
+                            {userVoteCount !== 0 && (
+                              <div className={`text-xs font-mono ${
+                                userVoteCount > 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {userVoteCount > 0 
+                                  ? `+${userVoteCount} ${Math.abs(userVoteCount) === 1 ? 'vote' : 'votes'}`
+                                  : `${userVoteCount} ${Math.abs(userVoteCount) === 1 ? 'vote' : 'votes'}`
+                                }
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
 
-                      <button
-                        onClick={() => handleVote(feature.id, -1)}
-                        disabled={!canVote && !hasDownvoted}
-                        className={`transition-all ${
-                          hasDownvoted
-                            ? 'text-red-400 scale-110'
-                            : canVote
-                            ? 'text-gray-600 hover:text-red-400 hover:scale-110'
-                            : 'text-gray-800 cursor-not-allowed'
-                        }`}
-                      >
-                        <ArrowDown className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    {/* Feature info */}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white text-lg mb-2">
-                        {feature.title}
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-3">
-                        {feature.description}
-                      </p>
-                      {feature.votes >= 10 && (
-                        <div className="inline-flex items-center gap-2 text-xs font-mono text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/30">
-                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                          BUILDING SOON
-                        </div>
-                      )}
-                      {userVote && (
-                        <div className={`text-xs font-mono mt-2 ${
-                          userVote === 1 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {userVote === 1 ? '✓ Upvoted' : '✓ Downvoted'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        {/* AI Chat toggle */}
-        <div className="text-center pt-8">
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-[0_0_30px_-5px] hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
-          >
-            <MessageSquare className="w-5 h-5" />
-            {showChat ? 'Close AI Chat' : 'Chat with AI Agent'}
-            <Sparkles className="w-5 h-5" />
-          </button>
-          <p className="text-sm text-gray-500 mt-3 font-mono">
-            Describe your idea → AI refines it → Get <span className="text-green-400">+{BONUS_VOTES} bonus votes</span>
-          </p>
-        </div>
-
-        {/* AI Chat widget */}
-        {showChat && (
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-purple-500/30 rounded-xl overflow-hidden shadow-[0_0_50px_-12px] shadow-purple-500/30">
-              <div className="h-[500px]">
+          {/* Right: AI Chat section */}
+          <div className="lg:sticky lg:top-4 lg:self-start">
+            <div className="text-center lg:text-left mb-4">
+              <h3 className="font-mono text-sm text-cyan-400 mb-2">SUGGEST A NEW FEATURE</h3>
+              <p className="text-gray-400 text-sm">
+                Chat with our AI agent. If we add your idea to the leaderboard, you'll get{' '}
+                <span className="text-green-400 font-semibold">+{BONUS_VOTES.toLocaleString()} bonus votes</span>.
+              </p>
+            </div>
+            
+            <div className="bg-gray-900 border border-cyan-500/30 rounded-xl overflow-hidden">
+              <div className="h-[600px]">
                 <ChatWidget onFeatureExtracted={handleChatFeature} />
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Footer info */}
-        <div className="max-w-3xl mx-auto pt-12">
-          <div className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-8">
-            <h3 className="font-mono text-sm text-cyan-400 mb-4">HOW IT WORKS</h3>
-            <ul className="space-y-3 text-gray-400">
-              <li className="flex items-start gap-3">
-                <span className="text-green-400 font-mono">01</span>
-                <span>Vote for features you want → AI builds when it hits <strong className="text-white">10+ votes</strong></span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-mono">02</span>
-                <span>Downvote features you don't need → Saves dev time</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-purple-400 font-mono">03</span>
-                <span>Submit your own idea → Get <strong className="text-green-400">+{BONUS_VOTES} bonus votes</strong> if we add it</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-pink-400 font-mono">04</span>
-                <span>Chat with AI to refine complex features</span>
-              </li>
-            </ul>
           </div>
         </div>
 
         {/* Terminal footer */}
         <div className="text-center pt-12 pb-8">
           <div className="font-mono text-sm text-gray-600">
-            <span className="text-gray-500">Built by AI</span>
-            <span className="text-gray-700 mx-3">·</span>
             <span className="text-gray-500">Powered by your votes</span>
           </div>
         </div>

@@ -23,7 +23,7 @@ export function HeroSection() {
 
         {/* Main headline */}
         <h1 className="text-5xl md:text-7xl font-bold leading-tight">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-cyan-400 to-purple-500">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
             The First Show Settlement
           </span>
           <br />
@@ -34,11 +34,11 @@ export function HeroSection() {
 
         {/* Subheadline */}
         <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-          You suggested features.
+          Suggest Features
           <br />
-          Your colleagues voted.
+          Vote on Them
           <br />
-          <span className="text-cyan-400 font-semibold">Our AI built them.</span>
+          <span className="text-cyan-400 font-semibold">We Build It</span>
         </p>
 
         {/* Terminal command block */}

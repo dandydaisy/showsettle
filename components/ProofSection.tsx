@@ -49,7 +49,7 @@ export function ProofSection() {
         </div>
 
         {/* Stats / Social proof */}
-        <div className="grid grid-cols-3 gap-4 max-w-3xl mx-auto pt-8">
+        <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto pt-8">
           <div className="text-center p-6 bg-gradient-to-br from-gray-900 to-gray-950 rounded-lg border border-green-500/20">
             <div className="text-3xl font-bold text-green-400">15</div>
             <div className="text-sm text-gray-500 mt-1">Votes to Build</div>
@@ -57,10 +57,6 @@ export function ProofSection() {
           <div className="text-center p-6 bg-gradient-to-br from-gray-900 to-gray-950 rounded-lg border border-cyan-500/20">
             <div className="text-3xl font-bold text-cyan-400">48h</div>
             <div className="text-sm text-gray-500 mt-1">Build Time</div>
-          </div>
-          <div className="text-center p-6 bg-gradient-to-br from-gray-900 to-gray-950 rounded-lg border border-purple-500/20">
-            <div className="text-3xl font-bold text-purple-400">100%</div>
-            <div className="text-sm text-gray-500 mt-1">AI-Built</div>
           </div>
         </div>
 

@@ -20,7 +20,7 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hey! 👋 I'm the AI that builds features for ShowSettle. What would make this tool more useful for you?",
+      content: "Hey! 👋 I help decide what features make it to the leaderboard. What would make ShowSettle more useful for you?",
       timestamp: new Date(),
     },
   ])
@@ -68,7 +68,7 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
 
       setMessages(prev => [...prev, assistantMessage])
 
-      // If feature was logged, notify parent and add to board
+      // If feature was approved and logged, notify parent
       if (data.featureLogged && data.featureTitle) {
         onFeatureExtracted?.(
           data.featureTitle,
@@ -96,14 +96,14 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col bg-gray-900 border-purple-500/30">
-      <CardHeader className="bg-gradient-to-r from-purple-900 to-pink-900 text-white rounded-t-xl border-b border-purple-500/30">
+    <Card className="h-full flex flex-col bg-gray-900 border-cyan-500/30">
+      <CardHeader className="bg-gray-800 text-white rounded-t-xl border-b border-cyan-500/30">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-purple-300" />
+          <Sparkles className="w-5 h-5 text-cyan-400" />
           <div>
-            <CardTitle className="text-white font-mono">AI Agent</CardTitle>
-            <CardDescription className="text-purple-200 font-mono text-xs">
-              Describe what you need → Get +5 votes if approved
+            <CardTitle className="text-white font-mono">Feature Agent</CardTitle>
+            <CardDescription className="text-gray-400 font-mono text-xs">
+              Pitch your idea → Get reviewed → Earn +5 votes if approved
             </CardDescription>
           </div>
         </div>
@@ -120,8 +120,8 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
               <div
                 className={`max-w-[85%] rounded-lg px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white'
-                    : 'bg-gray-900 border border-purple-500/30 shadow-sm text-gray-300'
+                    ? 'bg-cyan-600 text-white'
+                    : 'bg-gray-900 border border-cyan-500/30 shadow-sm text-gray-300'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -136,11 +136,11 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-gray-900 border border-purple-500/30 rounded-lg px-4 py-3 shadow-sm">
+              <div className="bg-gray-900 border border-cyan-500/30 rounded-lg px-4 py-3 shadow-sm">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
                   <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-purple-500/30 bg-gray-900 rounded-b-xl">
+        <div className="p-4 border-t border-cyan-500/30 bg-gray-900 rounded-b-xl">
           <div className="flex gap-2">
             <Input
               placeholder="I wish it could..."
@@ -157,13 +157,13 @@ export function ChatWidget({ onFeatureExtracted }: ChatWidgetProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoading}
-              className="flex-1 bg-black border-gray-700 text-white placeholder:text-gray-600 focus:border-purple-500"
+              className="flex-1 bg-black border-gray-700 text-white placeholder:text-gray-600 focus:border-cyan-500"
             />
             <Button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-[0_0_20px_-5px] hover:shadow-purple-500/50"
+              className="shrink-0 bg-cyan-500 hover:bg-cyan-600"
             >
               <Send className="w-4 h-4" />
             </Button>
