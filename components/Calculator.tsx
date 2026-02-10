@@ -18,10 +18,22 @@ export function Calculator() {
     promoterTake: number
   } | null>(null)
 
+  // Format number with commas as user types
+  const formatNumberInput = (value: string) => {
+    const num = value.replace(/,/g, '')
+    if (!num || isNaN(Number(num))) return ''
+    return Number(num).toLocaleString()
+  }
+
+  // Parse formatted number back to plain number
+  const parseNumberInput = (value: string) => {
+    return value.replace(/,/g, '')
+  }
+
   const calculate = () => {
-    const gborNum = parseFloat(gbor) || 0
-    const guaranteeNum = parseFloat(guarantee) || 0
-    const expensesNum = parseFloat(expenses) || 0
+    const gborNum = parseFloat(parseNumberInput(gbor)) || 0
+    const guaranteeNum = parseFloat(parseNumberInput(guarantee)) || 0
+    const expensesNum = parseFloat(parseNumberInput(expenses)) || 0
     const splitNum = parseFloat(splitPercent) || 0
 
     const profit = gborNum - guaranteeNum - expensesNum
@@ -65,10 +77,10 @@ export function Calculator() {
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
               <Input
                 id="gbor"
-                type="number"
-                placeholder="10000"
+                type="text"
+                placeholder="10,000"
                 value={gbor}
-                onChange={(e) => setGbor(e.target.value)}
+                onChange={(e) => setGbor(formatNumberInput(e.target.value))}
                 className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
               />
             </div>
@@ -82,10 +94,10 @@ export function Calculator() {
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
               <Input
                 id="guarantee"
-                type="number"
-                placeholder="2500"
+                type="text"
+                placeholder="2,500"
                 value={guarantee}
-                onChange={(e) => setGuarantee(e.target.value)}
+                onChange={(e) => setGuarantee(formatNumberInput(e.target.value))}
                 className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
               />
             </div>
@@ -99,10 +111,10 @@ export function Calculator() {
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
               <Input
                 id="expenses"
-                type="number"
-                placeholder="3000"
+                type="text"
+                placeholder="3,000"
                 value={expenses}
-                onChange={(e) => setExpenses(e.target.value)}
+                onChange={(e) => setExpenses(formatNumberInput(e.target.value))}
                 className="bg-black border-gray-700 text-white pl-10 focus:border-cyan-500 focus:ring-cyan-500/20"
               />
             </div>
@@ -129,7 +141,7 @@ export function Calculator() {
 
           <Button 
             onClick={calculate} 
-            className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-semibold hover:shadow-[0_0_30px_-5px] hover:shadow-cyan-500/50 transition-all duration-300" 
+            className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold transition-all duration-300" 
             size="lg"
           >
             Calculate Settlement

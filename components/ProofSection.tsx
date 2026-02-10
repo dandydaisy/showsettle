@@ -64,7 +64,7 @@ export function ProofSection() {
         <div className="text-center pt-8">
           <button
             onClick={scrollToVote}
-            className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-semibold rounded-lg hover:shadow-[0_0_30px_-5px] hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+            className="group inline-flex items-center gap-3 px-8 py-4 bg-cyan-500 hover:bg-cyan-600 text-black font-semibold rounded-lg transition-all duration-300 hover:scale-105"
           >
             Vote on What's Next
             <ArrowDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />

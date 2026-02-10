@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowUp, ArrowDown, Sparkles } from 'lucide-react'
 import { supabase, type Feature } from '@/lib/supabase'
 import { getUserId } from '@/lib/getUserId'
 import { ChatWidget } from '@/components/ChatWidget'
+import { EmailCaptureDialog } from '@/components/EmailCaptureDialog'
+import confetti from 'canvas-confetti'
 
 const MAX_VOTES = 8
 const BONUS_VOTES = 5
@@ -16,6 +18,11 @@ export function VoteSection() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
   const [bonusVotesEarned, setBonusVotesEarned] = useState(0)
+  const [highlightedFeatureId, setHighlightedFeatureId] = useState<number | null>(null)
+  const [showEmailCapture, setShowEmailCapture] = useState(false)
+  const [hasProvidedEmail, setHasProvidedEmail] = useState(false)
+  const [totalVotesCast, setTotalVotesCast] = useState(0)
+  const featureRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
   // Calculate total votes used (sum of all vote values)
   const votesUsed = Array.from(userVotes.values()).reduce((sum, count) => sum + Math.abs(count), 0)
@@ -98,6 +105,15 @@ export function VoteSection() {
           const current = prev.get(featureId) || 0
           return new Map(prev).set(featureId, current + direction)
         })
+
+        // Track total votes cast
+        const newTotalVotes = totalVotesCast + 1
+        setTotalVotesCast(newTotalVotes)
+
+        // Show email capture after 2nd vote (if not already provided)
+        if (newTotalVotes === 2 && !hasProvidedEmail) {
+          setShowEmailCapture(true)
+        }
       }
     } catch (error) {
       console.error('Error voting:', error)
@@ -133,6 +149,30 @@ export function VoteSection() {
       
       // Award bonus votes
       setBonusVotesEarned(prev => prev + BONUS_VOTES)
+
+      // 🎉 CONFETTI + HIGHLIGHT!
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#06b6d4', '#10b981', '#34d399']
+      })
+
+      // Highlight the new feature
+      setHighlightedFeatureId(data.id)
+      
+      // Scroll to the new feature
+      setTimeout(() => {
+        const element = featureRefs.current.get(data.id)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
+
+      // Remove highlight after 5 seconds
+      setTimeout(() => {
+        setHighlightedFeatureId(null)
+      }, 5000)
     } catch (error) {
       console.error('Error adding chat feature:', error)
     }
@@ -151,6 +191,15 @@ export function VoteSection() {
       id="vote" 
       className="min-h-screen flex flex-col px-6 py-20 relative"
     >
+      {/* Email Capture Dialog */}
+      {showEmailCapture && (
+        <EmailCaptureDialog
+          userId={userId}
+          onClose={() => setShowEmailCapture(false)}
+          onSubmit={() => setHasProvidedEmail(true)}
+        />
+      )}
+
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
       
@@ -246,11 +295,19 @@ export function VoteSection() {
                 const hasUpvoted = userVoteCount > 0
                 const hasDownvoted = userVoteCount < 0
                 const canVote = votesRemaining > 0
+                const isHighlighted = highlightedFeatureId === feature.id
 
                 return (
                   <Card 
-                    key={feature.id} 
-                    className="bg-gray-900 border-gray-800 hover:border-cyan-500/50 transition-all duration-300"
+                    key={feature.id}
+                    ref={(el) => {
+                      if (el) featureRefs.current.set(feature.id, el)
+                    }}
+                    className={`bg-gray-900 transition-all duration-300 ${
+                      isHighlighted 
+                        ? 'border-green-400 shadow-[0_0_30px_-5px] shadow-green-400/50 animate-pulse' 
+                        : 'border-gray-800 hover:border-cyan-500/50'
+                    }`}
                   >
                     <CardContent className="p-4">
                       <div className="flex gap-3">
