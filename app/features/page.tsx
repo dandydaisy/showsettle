@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ChatWidget } from '@/components/ChatWidget'
 import { ArrowUp } from 'lucide-react'
 
 const INITIAL_FEATURES = [
@@ -148,6 +149,8 @@ export default function FeaturesPage() {
           </p>
         </div>
       </div>
+
+      <ChatWidget />
     </main>
   )
 }

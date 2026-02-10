@@ -1,4 +1,5 @@
 import { Calculator } from '@/components/Calculator'
+import { ChatWidget } from '@/components/ChatWidget'
 
 export default function Home() {
   return (
@@ -19,6 +20,8 @@ export default function Home() {
           <p>Built by AI · Guided by you</p>
         </div>
       </div>
+
+      <ChatWidget />
     </main>
   )
 }
