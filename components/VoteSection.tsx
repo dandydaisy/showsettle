@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowUp, ArrowDown, Sparkles } from 'lucide-react'
 import { supabase, type Feature } from '@/lib/supabase'
@@ -8,10 +9,13 @@ import { getUserId } from '@/lib/getUserId'
 import { ChatWidget } from '@/components/ChatWidget'
 import { EmailCaptureDialog } from '@/components/EmailCaptureDialog'
 import { AdminPanel } from '@/components/AdminPanel'
+import { AuthButton } from '@/components/AuthButton'
+import { AuthPrompt } from '@/components/AuthPrompt'
 import confetti from 'canvas-confetti'
 
 const MAX_VOTES = 8
 const BONUS_VOTES = 5
+const MAX_VOTES_GUEST = 3 // Guests limited to 3 votes
 
 export function VoteSection() {
   const [features, setFeatures] = useState<Feature[]>([])
@@ -23,17 +27,32 @@ export function VoteSection() {
   const [showEmailCapture, setShowEmailCapture] = useState(false)
   const [hasProvidedEmail, setHasProvidedEmail] = useState(false)
   const [totalVotesCast, setTotalVotesCast] = useState(0)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const featureRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
   // Calculate total votes used (sum of all vote values)
   const votesUsed = Array.from(userVotes.values()).reduce((sum, count) => sum + Math.abs(count), 0)
-  const totalVotes = MAX_VOTES + bonusVotesEarned
-  const votesRemaining = totalVotes - votesUsed
+  const maxVotesAllowed = isAuthenticated ? (MAX_VOTES + bonusVotesEarned) : MAX_VOTES_GUEST
+  const votesRemaining = maxVotesAllowed - votesUsed
 
   useEffect(() => {
     const uid = getUserId()
     setUserId(uid)
     loadFeatures(uid)
+
+    // Check auth status
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsAuthenticated(!!user)
+    }
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session?.user)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const loadFeatures = async (uid: string) => {
@@ -69,6 +88,12 @@ export function VoteSection() {
   }
 
   const handleVote = async (featureId: number, direction: 1 | -1) => {
+    // Check if guest hit vote limit
+    if (!isAuthenticated && votesRemaining <= 0) {
+      setShowAuthPrompt(true)
+      return
+    }
+    
     if (votesRemaining <= 0) return
 
     try {
@@ -114,6 +139,19 @@ export function VoteSection() {
         // Show email capture after 2nd vote (if not already provided)
         if (newTotalVotes === 2 && !hasProvidedEmail) {
           setShowEmailCapture(true)
+        }
+
+        // Check if any features hit the build threshold
+        if (newVotes === 10) {
+          // Feature just hit 10 votes - trigger build queue check
+          fetch('/api/check-build-queue', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+              if (data.queued > 0) {
+                console.log('Auto-queued features for building:', data.features)
+              }
+            })
+            .catch(err => console.error('Failed to check build queue:', err))
         }
       }
     } catch (error) {
@@ -192,8 +230,22 @@ export function VoteSection() {
       id="vote" 
       className="min-h-screen flex flex-col px-6 py-20 relative"
     >
+      {/* Auth Button */}
+      <AuthButton />
+
       {/* Admin Panel */}
       <AdminPanel features={features} onUpdate={() => loadFeatures(userId)} />
+
+      {/* Auth Prompt */}
+      {showAuthPrompt && (
+        <AuthPrompt
+          onClose={() => setShowAuthPrompt(false)}
+          onSignIn={() => {
+            setShowAuthPrompt(false)
+            // AuthButton will handle the modal
+          }}
+        />
+      )}
 
       {/* Email Capture Dialog */}
       {showEmailCapture && (
@@ -282,8 +334,13 @@ export function VoteSection() {
                 {votesRemaining.toLocaleString()}
               </div>
               <div className="text-sm text-gray-500 font-mono">
-                / {totalVotes.toLocaleString()} votes
+                / {maxVotesAllowed.toLocaleString()} votes
               </div>
+              {!isAuthenticated && (
+                <div className="text-xs text-cyan-400 mt-1">
+                  Sign in for unlimited votes
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -352,9 +409,11 @@ export function VoteSection() {
 
                         {/* Feature info */}
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white mb-1">
-                            {feature.title}
-                          </h3>
+                          <Link href={`/feature/${feature.id}`} className="hover:text-cyan-400 transition-colors">
+                            <h3 className="font-semibold text-white mb-1">
+                              {feature.title}
+                            </h3>
+                          </Link>
                           <p className="text-gray-400 text-sm mb-2">
                             {feature.description}
                           </p>
