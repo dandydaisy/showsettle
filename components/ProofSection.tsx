@@ -1,6 +1,7 @@
 'use client'
 
 import { Calculator } from '@/components/Calculator'
+import { MultiShowTracker } from '@/components/MultiShowTracker'
 import { ArrowDown } from 'lucide-react'
 
 export function ProofSection() {
@@ -38,13 +39,23 @@ export function ProofSection() {
         </div>
 
         {/* Calculator showcase */}
-        <div className="relative">
-          {/* Neon glow effect */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-xl blur opacity-20"></div>
-          
-          {/* Calculator component */}
+        <div className="space-y-8">
           <div className="relative">
-            <Calculator />
+            {/* Neon glow effect */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-xl blur opacity-20"></div>
+            
+            {/* Calculator component */}
+            <div className="relative">
+              <Calculator />
+            </div>
+          </div>
+
+          {/* Multi-Show Tracker */}
+          <div className="relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-green-500 rounded-xl blur opacity-20"></div>
+            <div className="relative">
+              <MultiShowTracker />
+            </div>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ import { supabase, type Feature } from '@/lib/supabase'
 import { getUserId } from '@/lib/getUserId'
 import { ChatWidget } from '@/components/ChatWidget'
 import { EmailCaptureDialog } from '@/components/EmailCaptureDialog'
+import { AdminPanel } from '@/components/AdminPanel'
 import confetti from 'canvas-confetti'
 
 const MAX_VOTES = 8
@@ -191,6 +192,9 @@ export function VoteSection() {
       id="vote" 
       className="min-h-screen flex flex-col px-6 py-20 relative"
     >
+      {/* Admin Panel */}
+      <AdminPanel features={features} onUpdate={() => loadFeatures(userId)} />
+
       {/* Email Capture Dialog */}
       {showEmailCapture && (
         <EmailCaptureDialog

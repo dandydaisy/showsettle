@@ -5,14 +5,14 @@ import { VoteSection } from '@/components/VoteSection'
 export default function Home() {
   return (
     <main className="min-h-screen bg-black">
-      {/* Intro Section */}
-      <HeroSection />
+      {/* Vote Section - First! */}
+      <VoteSection />
       
       {/* Proof Section */}
       <ProofSection />
       
-      {/* Vote Section */}
-      <VoteSection />
+      {/* Intro Section - moved to bottom */}
+      <HeroSection />
     </main>
   )
 }
